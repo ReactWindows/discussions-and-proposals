@@ -57,14 +57,19 @@ In the following example, the app's logic takes precedence when keystrokes are e
 
 ## Detailed design
 
-The APIs being introduced here will follow the same model as the React APIs for [Keyboarding events](https://reactjs.org/docs/events.html#keyboard-events). 
+The APIs being introduced here will follow the models created by :
+- The corresponding React APIs for [Keyboarding events](https://reactjs.org/docs/events.html#keyboard-events)
+- The corresponding Windows APIs for [Keyboarding events](https://docs.microsoft.com/en-us/windows/uwp/design/input/keyboard-events)
 
-The following events will be introduced on `View` and `TextInput`. Other components where they may be handy can wrap a `View` around to capture the Key events.
+### Keyboard events
+The following events will be introduced on `View` and `TextInput` to cover the most common use cases where key stroke handling is likely to occur. Other individual components where they may be neeeded can wrap a `View` around to capture the Key events.
 
-| API | Args | Returns |
-|:---:|:----:|:-------:|
-| onKeyDown | IKeyboardEvent | void |
-| onKeyUp | IKeyboardEvent | void |
+| API | Args | Returns | Description |
+|:---:|:----:|:-------:|:----:|
+| onKeyDown | IKeyboardEvent | void | Occurs when a keyboard key is pressed when a component has focus. On Windows, this corresponds to [KeyDown](https://docs.microsoft.com/en-us/uwp/api/windows.ui.xaml.uielement.keydown)|
+| onKeyDownCapture | IKeyboardEvent | void | Occurs when the `onKeyDown` event is being routed. `onKeyDown` is the corresponding bubbling event. On Windows, this corresponds to [PreviewKeyDown](https://docs.microsoft.com/en-us/uwp/api/windows.ui.xaml.uielement.previewkeydown)|
+| onKeyUp | IKeyboardEvent | void | Occurs when a keyboard key is released when a component has focus. On Windows, this corresponds to [KeyUp](https://docs.microsoft.com/en-us/uwp/api/windows.ui.xaml.uielement.keyup)|
+| onKeyUpCapture | IKeyboardEvent | void | Occurs when the `onKeyUp` event is being routed. `onKeyUp` is the corresponding bubbling event. On Windows, this corresponds to [PreviewKeyUp](https://docs.microsoft.com/en-us/uwp/api/windows.ui.xaml.uielement.previewkeyup)|
 
 Where `IKeyboardEvent` will be a new event type added to `ReactNative.NativeSyntheticEvents` of type `INativeKeyboardEvent`. `INativeKeyboardEvent` is a new interface and will expose the following properties:
 
@@ -75,20 +80,30 @@ Where `IKeyboardEvent` will be a new event type added to `ReactNative.NativeSynt
 | ctrlKey | boolean | The `Ctrl` (Control) key. |
 | shiftKey | boolean | The `Shift` key. |
 | metaKey | boolean | Maps to Windows `Logo` key and the Apple `Command` key. |
-| eventPhase | KeyEventPhase | current phase of routing for the key event. |
+| eventPhase | KeyEventPhase | Current phase of routing for the key event. |
 
-Where `KeyEventPhase` is a new enum to detect whether the keystroke is being tunneled/bubbled to the target. It has the following fields:
+Where `KeyEventPhase` is a new enum to detect whether the keystroke is being tunneled/bubbled to the target component that has focus. It has the following fields:
 
-- None
-- Capturing 
-- AtTarget
-- Bubbling
+- None : none
+- Capturing : when the keydown/keyup event is being captured while tunneling its way from the root to the target component
+- AtTarget : when the keydown/keyup event has reached the target component that is handling the corresponding event
+- Bubbling : when the keydown/keyup event is being captured while bubbling its way to the parent(s) of the target component
 
-When these events are handled by the app code, the corresponding native component will have Key* events marked as *handled* for the declared key strokes.
+### Declarative properties
+
+To co-ordinate the handoffs of these Keyboard events between the native layer and the JS layer, we are also introducing 2 corresponding properties on `View` and `TextInput` components. These are:
+
+| Property | Type | Description |
+|:---:|:----:|:----:|
+| keyDownEvents | IHandledKeyboardEvents[] | Specifies the key(s) that are handled in the JS layer by the onKeyDown/onKeyDownCapture events |
+| keyUpEvents | IHandledKeyboardEvents[] | Specifies the key(s) that are handled in the JS layer by the onKeyUp/onKeyUpCapture events |
+
+Where `IHandledKeyboardEvents` is a new type which takes a string parameter named `key` to declare the key strokes that are of interest to the JS layer.
+
+When the `onKeyXX` events are handled by the app code, the corresponding native component will have KeyXX events marked as *handled* for the declared key strokes.
 
 ### TBD
-- Add declarative properties for which key strokes are being handled
-- Add corresponding key capture events 
+
 - Threading model details and other more specific implementation details
 
 ## Drawbacks
