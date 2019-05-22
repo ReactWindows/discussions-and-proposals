@@ -13,7 +13,7 @@ Components need the ability to handle key strokes and implement custom logic whe
 ## Motivation
 
 There are several usecases where end users may interact with `react-native` applications using keyboard. These include:
-- iPads and Android tablet devices with attached keyboards
+- iPads and Android tablet devices with attached keyboards or bluetooth keyboards
 - `react-native-windows` apps that will be deployed on PCs and laptop computers
 - `react-native-web` apps that could be used in any end point including Chromebooks, PCs and tablet devices 
 
@@ -121,11 +121,10 @@ When the `onKeyXX` events are handled by the app code, the corresponding native 
 
 The primary use-case for `react-native` is mobile apps on iOS and Android where keyboard may not be super important as an input device. Hence this may be seen as additional complexity in API surface. However, this will not be impacting any existing apps/code. End users using keyboard (even in iOS/Android) will automatically see keyboard interactions in lean-core components light up. Developers who choose to use the new APIs will be able to take advantage of the additional keyboarding capabilities. Those who choose not to will see no change in the behavior of their existing code. This should be overall goodness as the scope for `react-native` usage grows beyond just mobile applications.
 
-When implementing for each platform, different keys may map to different keyCodes which is why the `INativeKeyboardEvent` interface has been kept as a simple one with only one string property in lieu of separate key parameters for Ctrl, Alt etc., 
 
 ## Alternatives
 
-- Introduce a separate `KeyEventHandlerComponent` that can be wrapped around any React Native component to handle keystrokes. This was rejected as it feels too clunky and separate where basic keyboarding needs to be a part of `View` so all apps can get these behaviors and APIs by default.
+- Introduce a separate `KeyEventHandlerComponent` that can be wrapped around any React Native component to handle keystrokes. This was rejected as it feels too clunky and separate where basic keyboarding needs to be a part of `View` so all apps can get these behaviors and APIs by default and without additional performance overhead (too many elements).
 - Introduce the APIs and implement default keystroke handling in *windows* forked custom components like `ViewWindows` or `ButtonWindows`. This was rejected because the default behavior of react-native components need to have basic keyboard behaviors in Windows and developers bringing crossplatform React Native code should have their Views *just work* on Windows and Web. Also, there may be usecases even in iOS/Andoid with attached keyboards where these APIs and default behaviors could be handy.
 
 ## Adoption strategy
