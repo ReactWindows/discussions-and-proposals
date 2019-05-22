@@ -28,6 +28,8 @@ Both the above scenarios are motivations to surface a basic set of Keyboarding A
 This proposal deals with the minimal set of APIs needed to achieve some of the simplest keyboarding support. The following are not in scope for this proposal and can be added on later if there are scenarios demanding them:
 - `onKeyPress` events for IME/auto-complete scenarios where each character that is received needs to be processed independently. 
 
+*Note: This proposal does not include focus and tabbing related APIs and assumes that such APIs exists for simplicity. There will be a separate proposal addressing those APIs shortly*
+
 ## Basic example
 
 ### Example 1 : Simple key stroke handling
@@ -44,15 +46,24 @@ In the following example, the lastKeyDown prop will contain the key stroke from 
 
 ### Example 2 : Custom key stroke handling in native components
 
-In the following example, the app's logic takes precedence when keystrokes are encountered in the TextInput before the native platform can handle them. 
+In the following example, the app's logic takes precedence when certain keystrokes are encountered in the TextInput before the native platform can handle them. 
+
 ```
-  <TextInput onKeyUp={this._onKeyUp} />
+  <TextInput onKeyUp={this._onKeyUp} keyUpEvents={handledNativeKeyboardEvents} />
+  
+  const handledNativeKeyboardEvents: IHandledKeyboardEvent[] = [
+     { key: 'Enter' },
+     { key: 'Esc' },
+  ];
   
   private _onKeyUp = (event: IKeyboardEvent) => {
-    if(event.nativeEvent.key == 'Enter'){
-            //do something custom when Enter key is pressed
-         }
+    if(event.nativeEvent.key == 'Enter' && event.nativeEvent.eventPhase == KeyEventPhase.AtTarget){
+            //do something custom when Enter key is detected when focus is on the TextInput component
+    } else if (event.nativeEvent.key == 'Esc' && event.nativeEvent.eventPhase == KeyEventPhase.AtTarget){
+            //do something custom when Escape key is detected when focus is on the TextInput component
+    }    
   };
+  
 ```
 
 ## Detailed design
@@ -123,7 +134,7 @@ This will be a new API and not a breaking change. This is being implemented in t
 
 ## How we teach this
 
-These APIs should be presented as a continuation of React patterns. As such, it should be very familiar to existing web/React developers who can relate these APIs to concepts they already know.
+These APIs should be presented as a continuation of React and Windows patterns. As such, it should be very familiar to existing web/React developers as well as desktop developers who can relate these APIs to concepts they already know.
 
 Once implemented, these APIs should be documented as part of official `react-native` API documentation. 
 
