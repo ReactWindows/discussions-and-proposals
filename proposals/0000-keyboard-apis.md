@@ -89,7 +89,7 @@ Where `IKeyboardEvent` will be a new event type added to `ReactNative.NativeSynt
 | ctrlKey | boolean | The `Ctrl` (Control) key. | false |
 | shiftKey | boolean | The `Shift` key. | false |
 | metaKey | boolean | Maps to Windows `Logo` key and the Apple `Command` key. | false |
-| eventPhase | EventPhase | Current phase of routing for the key event. | None |
+| eventPhase | EventPhase | Current phase of routing for the key event. | Bubbling |
 
 Where `EventPhase` is an enum to detect whether the keystroke is being tunneled/bubbled to the target component that has focus. It has the following fields:
 
@@ -97,6 +97,8 @@ Where `EventPhase` is an enum to detect whether the keystroke is being tunneled/
 - Capturing : when the keydown/keyup event is being captured while tunneling its way from the root to the target component
 - AtTarget : when the keydown/keyup event has reached the target component that is handling the corresponding event
 - Bubbling : when the keydown/keyup event is being captured while bubbling its way to the parent(s) of the target component
+
+Note: In the implementation of these events, the properties in [`NativeSyntheticEvent`](https://reactjs.org/docs/events.html#overview) like target, bubbles, cancelable etc., should be hooked up. For now, we shall follow the same behaviors for these as other events in react-native today. 
 
 ### Declarative properties
 
@@ -115,10 +117,11 @@ When the `onKeyXX` events are handled by the app code, the corresponding native 
 
 ### Behavior details
 
-- If a component has not declared the key stroke/eventPhase that it is interested in using the `keyDownEvents` or `keyUpEvents` properties, the native layer will handle the key strokes as default and the JS `onKeyDown` and `onKeyUp` events may/may not get fired depending on whether the native component handled the key stroke when it occured. For example, if the RN layer wants to handle a Tab keystroke in a TextInput component in a different way from tabbing to the next focusable element (which is the native default), it has to declare the intent to handle that keystroke through the `keyDownEvents` property by setting the `eventPhase` parameter to `EventPhase.Capturing` and then handling the corresponding `onKeyDown` event for that key stroke.
-
-- NEEDS DISCUSSION : What should happen when the declared values conflict with the event handlers?
-- NEEDS DISCUSSION : Is it possible to declare different keystrokes for different event phases on the same component?
+- Because of the JS thread and the native thread being unconnected, all events are always dispatched to the JS layer regardless of whether they are handled in the native layer.
+- The declarative properties are a way for the JS side to communicate to the native layer that an event is being "handled" on the JS side. 
+- If there are errors between declared key strokes and the key strokes in the event handlers, the event handlers will work as though the key strokes were declared
+- It is possible to declare different keystrokes for different event phases on the same component.
+- The properties in `NativeSyntheticEvents` like bubbles, suppress etc., will 
 
 ### TBD
 
