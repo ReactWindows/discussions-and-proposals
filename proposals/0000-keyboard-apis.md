@@ -15,6 +15,7 @@ Components need the ability to handle key strokes and implement custom logic whe
 There are several usecases where end users may interact with `react-native` applications using keyboard. These include:
 - iPads and Android tablet devices with attached keyboards or bluetooth keyboards
 - `react-native-windows` apps that will be deployed on PCs and laptop computers
+   - This will also benefit `react-native-windows` apps deployed on Xbox devices since Gamepad uses the same hooks behind the scenes as does Keyboard. 
 - `react-native-web` apps that could be used in any end point including Chromebooks, PCs and tablet devices 
 
 In the realm of enabling keyboard interactions, there are 2 sets of scenarios that motivate the need for Keyboarding APIs:
@@ -46,21 +47,18 @@ In the following example, the lastKeyDown prop will contain the key stroke from 
 
 ### Example 2 : Custom key stroke handling in native components
 
-In the following example, the app's logic takes precedence when certain keystrokes are encountered in the TextInput before the native platform can handle them. 
+In the following example, the app's logic takes precedence when certain keystrokes are encountered at certain event routing phases in the TextInput before the native platform can handle them. 
 
 ```
   <TextInput onKeyUp={this._onKeyUp} keyUpEvents={handledNativeKeyboardEvents} />
   
   const handledNativeKeyboardEvents: IHandledKeyboardEvent[] = [
-     { key: 'Enter' },
-     { key: 'Esc' },
+     { key: 'Enter', eventPhase : EventPhase.Bubbling },
   ];
   
   private _onKeyUp = (event: IKeyboardEvent) => {
-    if(event.nativeEvent.key == 'Enter' && event.nativeEvent.eventPhase == KeyEventPhase.AtTarget){
-            //do something custom when Enter key is detected when focus is on the TextInput component
-    } else if (event.nativeEvent.key == 'Esc' && event.nativeEvent.eventPhase == KeyEventPhase.AtTarget){
-            //do something custom when Escape key is detected when focus is on the TextInput component
+    if(event.nativeEvent.key == 'Enter'){
+            //do something custom when Enter key is detected when focus is on the TextInput component AFTER the native TextBox has had a chance to handle it (eventPhase = Bubbling)
     }    
   };
   
@@ -76,7 +74,7 @@ The APIs being introduced here will follow the models created by :
 The following events will be introduced on `View` and `TextInput` to cover the most common use cases where key stroke handling is likely to occur. Other individual components where they may be neeeded can wrap a `View` around to capture the Key events.
 
 | API | Args | Returns | Description |
-|:---:|:----:|:-------:|:----:|
+|:---:|:----:|:-------:|----|
 | onKeyDown | IKeyboardEvent | void | Occurs when a keyboard key is pressed when a component has focus. On Windows, this corresponds to [KeyDown](https://docs.microsoft.com/en-us/uwp/api/windows.ui.xaml.uielement.keydown)|
 | onKeyDownCapture | IKeyboardEvent | void | Occurs when the `onKeyDown` event is being routed. `onKeyDown` is the corresponding bubbling event. On Windows, this corresponds to [PreviewKeyDown](https://docs.microsoft.com/en-us/uwp/api/windows.ui.xaml.uielement.previewkeydown)|
 | onKeyUp | IKeyboardEvent | void | Occurs when a keyboard key is released when a component has focus. On Windows, this corresponds to [KeyUp](https://docs.microsoft.com/en-us/uwp/api/windows.ui.xaml.uielement.keyup)|
@@ -84,16 +82,16 @@ The following events will be introduced on `View` and `TextInput` to cover the m
 
 Where `IKeyboardEvent` will be a new event type added to `ReactNative.NativeSyntheticEvents` of type `INativeKeyboardEvent`. `INativeKeyboardEvent` is a new interface and will expose the following properties:
 
-| Property | Type | Description |
-|:---:|:----:|:----:|
-| key | string | The character typed by the user. |
-| altKey | boolean | The `Alt` (Alternative) key. Also maps to Apple `Option` key. |
-| ctrlKey | boolean | The `Ctrl` (Control) key. |
-| shiftKey | boolean | The `Shift` key. |
-| metaKey | boolean | Maps to Windows `Logo` key and the Apple `Command` key. |
-| eventPhase | KeyEventPhase | Current phase of routing for the key event. |
+| Property | Type | Description | Default |
+|:---:|:----:|----|:--:|
+| key | string | The character typed by the user. | string.Empty |
+| altKey | boolean | The `Alt` (Alternative) key. Also maps to Apple `Option` key. | false |
+| ctrlKey | boolean | The `Ctrl` (Control) key. | false |
+| shiftKey | boolean | The `Shift` key. | false |
+| metaKey | boolean | Maps to Windows `Logo` key and the Apple `Command` key. | false |
+| eventPhase | EventPhase | Current phase of routing for the key event. | AtTarget |
 
-Where `KeyEventPhase` is a new enum to detect whether the keystroke is being tunneled/bubbled to the target component that has focus. It has the following fields:
+Where `EventPhase` is an enum to detect whether the keystroke is being tunneled/bubbled to the target component that has focus. It has the following fields:
 
 - None : none
 - Capturing : when the keydown/keyup event is being captured while tunneling its way from the root to the target component
@@ -105,13 +103,17 @@ Where `KeyEventPhase` is a new enum to detect whether the keystroke is being tun
 To co-ordinate the handoffs of these Keyboard events between the native layer and the JS layer, we are also introducing 2 corresponding properties on `View` and `TextInput` components. These are:
 
 | Property | Type | Description |
-|:---:|:----:|:----:|
+|:---:|:----:|----|
 | keyDownEvents | IHandledKeyboardEvents[] | Specifies the key(s) that are handled in the JS layer by the onKeyDown/onKeyDownCapture events |
 | keyUpEvents | IHandledKeyboardEvents[] | Specifies the key(s) that are handled in the JS layer by the onKeyUp/onKeyUpCapture events |
 
-Where `IHandledKeyboardEvents` is a new type which takes a string parameter named `key` to declare the key strokes that are of interest to the JS layer.
+Where `IHandledKeyboardEvents` is a new type which takes the following parameters:
+- a string parameter named `key` to declare the key strokes that are of interest to the JS layer 
+- an `eventPhase` paramter of type `EventPhase` to declare the routing phase of interest to the JS layer. 
 
-When the `onKeyXX` events are handled by the app code, the corresponding native component will have KeyXX events marked as *handled* for the declared key strokes.
+When the `onKeyXX` events are handled by the app code, the corresponding native component will have KeyXX/PreviewKeyXX events marked as *handled* for the declared key strokes.
+
+
 
 ### TBD
 
