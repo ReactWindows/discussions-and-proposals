@@ -117,15 +117,37 @@ When the `onKeyXX` events are handled by the app code, the corresponding native 
 
 ### Behavior details
 
-- Because of the JS thread and the native thread being unconnected, all events are always dispatched to the JS layer regardless of whether they are handled in the native layer.
-- The declarative properties are a way for the JS side to communicate to the native layer that an event is being "handled" on the JS side. 
-- If there are errors between declared key strokes and the key strokes in the event handlers, the event handlers will work as though the key strokes were declared
-- It is possible to declare different keystrokes for different event phases on the same component.
-- The properties in `NativeSyntheticEvents` like bubbles, suppress etc., will 
+- Because of the JS thread and the native thread being unconnected, all events are always dispatched to the JS layer regardless of whether they are handled in the native layer. 
+   - *Note: This is the pragmatic choice that we are making to unblock ourselves based on our understanding of how Pointer events work in RN for iOS/Android. However, this is not the desired long term behavior since it would be nicer to not expose the seams between the 2 layers to the developer and ensure that the eventing system in RN behaves in a more predictable manner. We may make some updates here based on conversations with REACT and React Native community and contributors as well as expected updates in the fabric rearchitecture.*
 
-### TBD
+- The declarative properties are simply a way for the JS side to communicate to the native layer that an event is being "handled" on the JS side. However, because of the above threading model limitation, there may be missed key strokes between the 2 layers since there is no guaranteed way to keep the handling of key strokes fully synchronous at this time. 
 
-- Threading model details and other more specific implementation details
+- If there are mismatches between the declared key strokes/eventPhases and the correspinding values in the event handlers, the event handlers will attempt to work as though the key strokes were declared. If the native layer did not handle those key strokes, the event handlers will work and if the native layer did handle them, the event handler may not fire since it was not declared correctly. 
+   - We may want to add a runtime warning for such user errors. This is a good-to-have.
+   
+- It is possible to declare different keystrokes for different event phases on the same component. For example, the following is allowed:
+
+```
+  <TextInput onKeyUp={this._onKeyUp} keyUpEvents={handledNativeKeyboardEvents} />
+  
+  const handledNativeKeyboardEvents: IHandledKeyboardEvent[] = [
+     { key: 'Esc' },
+     { key: 'Enter', ctrlKey : true, eventPhase : EventPhase.Capturing }
+  ];
+  
+  private _onKeyUp = (event: IKeyboardEvent) => {
+    if(event.nativeEvent.key == 'Esc'){
+       //do something custom when Escape key is detected when focus is on the TextInput component AFTER 
+       //the native TextBox has had a chance to handle it (default eventPhase = Bubbling)
+    } else if (event.nativeEvent.key == 'Enter' && 
+               event.nativeEvent.eventPhase == EventPhase.Capturing && 
+               event.nativeEvent.ctrlKey == true)
+    {
+       //do something custom when user presses Ctrl + Enter when focus is on the TextInput component BEFORE
+       //the native TextBox has had a chance to handle it.
+    }      
+  }; 
+```
 
 ## Drawbacks
 
