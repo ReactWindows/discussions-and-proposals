@@ -1,6 +1,6 @@
 ---
 title: Keyboard events
-author: Harini Kannan, Stephen Peters
+author: Harini Kannan
 date: 05/21/2019
 ---
 
@@ -89,7 +89,7 @@ Where `IKeyboardEvent` will be a new event type added to `ReactNative.NativeSynt
 | ctrlKey | boolean | The `Ctrl` (Control) key. | false |
 | shiftKey | boolean | The `Shift` key. | false |
 | metaKey | boolean | Maps to Windows `Logo` key and the Apple `Command` key. | false |
-| eventPhase | EventPhase | Current phase of routing for the key event. | AtTarget |
+| eventPhase | EventPhase | Current phase of routing for the key event. | None |
 
 Where `EventPhase` is an enum to detect whether the keystroke is being tunneled/bubbled to the target component that has focus. It has the following fields:
 
@@ -113,7 +113,11 @@ Where `IHandledKeyboardEvents` is a new type which takes the following parameter
 
 When the `onKeyXX` events are handled by the app code, the corresponding native component will have KeyXX/PreviewKeyXX events marked as *handled* for the declared key strokes.
 
+### Behavior details
 
+- If a component has not declared the key stroke/eventPhase that it is interested in using the `keyDownEvents` or `keyUpEvents` properties, the native layer will handle the key strokes as default and the JS `onKeyDown` and `onKeyUp` events may/may not get fired depending on whether the native component handled the key stroke when it occured. For example, if the RN layer wants to handle a Tab keystroke in a TextInput component in a different way from tabbing to the next focusable element (which is the native default), it has to declare the intent to handle that keystroke through the `keyDownEvents` property by setting the `eventPhase` parameter to `EventPhase.Capturing` and then handling the corresponding `onKeyDown` event for that key stroke.
+
+- NEEDS DISCUSSION : What should happen when the declared values conflict with the event handlers?
 
 ### TBD
 
