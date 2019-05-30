@@ -118,6 +118,7 @@ When the `onKeyXX` events are handled by the app code, the corresponding native 
 - If a component has not declared the key stroke/eventPhase that it is interested in using the `keyDownEvents` or `keyUpEvents` properties, the native layer will handle the key strokes as default and the JS `onKeyDown` and `onKeyUp` events may/may not get fired depending on whether the native component handled the key stroke when it occured. For example, if the RN layer wants to handle a Tab keystroke in a TextInput component in a different way from tabbing to the next focusable element (which is the native default), it has to declare the intent to handle that keystroke through the `keyDownEvents` property by setting the `eventPhase` parameter to `EventPhase.Capturing` and then handling the corresponding `onKeyDown` event for that key stroke.
 
 - NEEDS DISCUSSION : What should happen when the declared values conflict with the event handlers?
+- NEEDS DISCUSSION : Is it possible to declare different keystrokes for different event phases on the same component?
 
 ### TBD
 
